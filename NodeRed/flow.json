@@ -1,0 +1,93 @@
+[{"id":"f333a36b4044850b","type":"tab","label":"Flow 
+1","disabled":false,"info":"","env":[]},{"id":"3309e16c70dd8c1b","type":"dwdweather","z":"f333a36b4044850b","name":"","mosmixStation":"10519","lookAheadHours":"0","additionalFields":"PPPP,Td,FX1","omitMessageOnStart":true,"repeat":"0","topic":"","x":650,"y":400,"wires":[["011575235f45b0df"]]},{"id":"d31ec9216c297461","type":"function","z":"f333a36b4044850b","name":"Luftdichte","func":"// 
+https://rechneronline.de/barometer/luftdichte.php\n// Gaskonstante der 
+feuchten Luft\nvar rf = 287.058 / ( 1 - (msg.payload.humidity/100) * 
+(msg.payload.vpmax*100)/(msg.payload.PPPP*100) * ( 1 - 287.058/461.523 
+))\n\n// Luftdichte\nmsg.payload.rho = ((msg.payload.PPPP*100) / (rf 
+*(msg.payload.tempc+273.15)))*1000\n\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1200,"y":480,"wires":[["f3f792e862b2b7e4"]]},{"id":"6bbc7d27695b4286","type":"function","z":"f333a36b4044850b","name":"Sättigungsdampfdruck","func":"// 
+https://www.weather.gov/media/epz/wxcalc/vaporPressure.pdf\nconst tCelsius 
+= msg.payload.tempc;\nconst tRankin = (tCelsius * 1.8) + 491.67;\n\nconst 
+first = -10440.397/tRankin;\nconst second = -11.29465; \nconst third = 
+tRankin * -0.027022355;\nconst fourth = Math.pow(tRankin,2) * 
+0.00001289036;\nconst fifth = Math.pow(tRankin,3) * 
+-0.0000000024780681;\nconst sixth = 6.5459673 * 
+Math.log(tRankin);\n\nconst exponent = first + second + third + fourth + 
+fifth + sixth;\n\nconst vpsat = (Math.pow(Math.E, 
+exponent)*68.9475).toFixed(2);\n\nmsg.payload.vpmax = vpsat;\n\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1680,"y":400,"wires":[["40d5c581a426dbef"]]},{"id":"f3f792e862b2b7e4","type":"function","z":"f333a36b4044850b","name":"Spezifische 
+Luftfeuchte","func":"// 
+https://www.schweizer-fn.de/lueftung/feuchte/feuchte.php#spezfeuchte\n\n// 
+Partialdruck Wasserdampf\nvar e = 
+(msg.payload.humidity/100)*(msg.payload.vpmax*100)\n\n// dichte trockene 
+Luft\nvar ptl = 
+((msg.payload.PPPP*100)-e)/(287.058*(msg.payload.tempc+273.15))\n\n// 
+dichte wasserdampf\nvar pw = 
+e/(461.51*(msg.payload.tempc+273.15))\n\n\nvar x = 
+pw/(ptl+pw)\nmsg.payload.sh = x*1000\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1390,"y":480,"wires":[["e1dce008607b2ecf"]]},{"id":"a190b427c5d477e4","type":"function","z":"f333a36b4044850b","name":"Pascal 
+in Hektopascal umrechnen","func":"msg.payload.PPPP = 
+(msg.payload.PPPP/100).toFixed(2)\n\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1280,"y":400,"wires":[["2f352f3e0b72f924"]]},{"id":"40d5c581a426dbef","type":"function","z":"f333a36b4044850b","name":"Dampfdruck","func":"// 
+https://www.weather.gov/media/epz/wxcalc/vaporPressure.pdf\nconst tCelsius 
+= msg.payload.Td;\nconst tRankin = (tCelsius * 1.8) + 491.67;\n\nconst 
+first = -10440.397/tRankin;\nconst second = -11.29465; \nconst third = 
+tRankin * -0.027022355;\nconst fourth = Math.pow(tRankin,2) * 
+0.00001289036;\nconst fifth = Math.pow(tRankin,3) * 
+-0.0000000024780681;\nconst sixth = 6.5459673 * 
+Math.log(tRankin);\n\nconst exponent = first + second + third + fourth + 
+fifth + sixth;\n\nconst vpsat = (Math.pow(Math.E, 
+exponent)*68.9475).toFixed(2);\n\nmsg.payload.vpact = vpsat;\n\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1870,"y":400,"wires":[["27531021f00a35fc"]]},{"id":"27531021f00a35fc","type":"function","z":"f333a36b4044850b","name":"Dampfdruckdefizit","func":"msg.payload.vpdef 
+= Math.abs(msg.payload.vpmax - msg.payload.vpact)\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":2050,"y":400,"wires":[["d31ec9216c297461"]]},{"id":"2f352f3e0b72f924","type":"function","z":"f333a36b4044850b","name":"Taupunkt","func":"msg.payload.Td 
+= (msg.payload.Td - 273.15).toFixed(2)\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1500,"y":400,"wires":[["6bbc7d27695b4286"]]},{"id":"c5f09364514e2196","type":"function","z":"f333a36b4044850b","name":"Potentielle 
+Temperatur","func":"msg.payload.tpot = (msg.payload.tempc+273.15) * 
+Math.pow(((1000*100)/(msg.payload.PPPP*100)),0.2884)\n\n\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1880,"y":480,"wires":[["526b3fdb851bf208"]]},{"id":"e1dce008607b2ecf","type":"function","z":"f333a36b4044850b","name":"Wasserdampfkonzentration","func":"msg.payload.h2oc 
+= 1000*msg.payload.vpact/msg.payload.PPPP\n\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1640,"y":480,"wires":[["c5f09364514e2196"]]},{"id":"804512a3b75ffb9e","type":"debug","z":"f333a36b4044850b","name":"","active":false,"tosidebar":true,"console":false,"tostatus":false,"complete":"payload","targetType":"msg","statusVal":"","statusType":"auto","x":1490,"y":540,"wires":[]},{"id":"d22a1344aa24f37f","type":"csv","z":"f333a36b4044850b","name":"","sep":",","hdrin":"","hdrout":"once","multi":"one","ret":"\\n","temp":"","skip":"0","strings":true,"include_empty_strings":"","include_null_values":"","x":1350,"y":540,"wires":[["804512a3b75ffb9e","5903fe25c11f5969"]]},{"id":"526b3fdb851bf208","type":"function","z":"f333a36b4044850b","name":"","func":"var 
+today = new Date();\nvar DateTimeStr = ('0' + today.getDate()).slice(-2) + 
+\".\" + ('0' + (today.getMonth()+1)).slice(-2) + \".\" + 
+today.getFullYear() + \" \" + ('0' + (today.getHours())).slice(-2) + \":\" 
++ ('0' + (today.getMinutes())).slice(-2) + \":00\"\n\nmsg.payload = {\n    
+\"Date Time\": DateTimeStr,\n    \"p (mbar)\": Number(msg.payload.PPPP),\n    
+\"T (degC)\": Number(msg.payload.tempc),\n    \"Tpot (K)\": 
+Number(msg.payload.tpot),\n    \"Tdew (degC)\": Number(msg.payload.Td),\n    
+\"rh (%)\": Number(msg.payload.humidity),\n    \"VPmax (mbar)\": 
+Number(msg.payload.vpmax),\n    \"VPact (mbar)\": 
+Number(msg.payload.vpact),\n    \"VPdef (mbar)\": 
+Number(msg.payload.vpdef),\n    \"sh (g/kg)\": Number(msg.payload.sh),\n    
+\"H2OC (mmol/mol)\": Number(msg.payload.h2oc),\n    \"rho (g/m**3)\": 
+Number(msg.payload.rho),\n    \"wv (m/s)\": 
+Number(msg.payload.windspeed),\n    \"max. wv (m/s)\": 
+Number(msg.payload.FX1),\n    \"wd (deg)\": 
+Number(msg.payload.winddirection)\n}\n\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":1200,"y":540,"wires":[["d22a1344aa24f37f"]]},{"id":"5903fe25c11f5969","type":"file","z":"f333a36b4044850b","name":"","filename":"/data/weatherdata/Weatherdata.csv","appendNewline":false,"createDir":true,"overwriteFile":"false","encoding":"none","x":1570,"y":600,"wires":[[]]},{"id":"96caf3d16769b6dd","type":"file 
+in","z":"f333a36b4044850b","name":"","filename":"/data/weatherdata/Weatherdata.csv","format":"utf8","chunk":false,"sendError":false,"encoding":"none","allProps":false,"x":470,"y":700,"wires":[["7b44932f0c69a248"]]},{"id":"9ed87a3d52e68038","type":"http 
+in","z":"f333a36b4044850b","name":"","url":"/getCSVWeather.csv","method":"get","upload":false,"swaggerDoc":"","x":150,"y":700,"wires":[["96caf3d16769b6dd"]]},{"id":"7c7b6f9d97d2f3df","type":"http 
+response","z":"f333a36b4044850b","name":"","statusCode":"","headers":{},"x":970,"y":700,"wires":[]},{"id":"7b44932f0c69a248","type":"function","z":"f333a36b4044850b","name":"","func":"msg.payload 
+= msg.payload.replace(/[\\n\\r]+/g,\"<br>\");\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":780,"y":700,"wires":[["7c7b6f9d97d2f3df"]]},{"id":"10b931bce47f593d","type":"mqtt 
+out","z":"f333a36b4044850b","name":"","topic":"/devices/weatherstation/getData","qos":"2","retain":"false","respTopic":"","contentType":"","userProps":"","correl":"","expiry":"","broker":"ba04e421.7f8998","x":360,"y":240,"wires":[]},{"id":"6dafcd0565877064","type":"mqtt 
+in","z":"f333a36b4044850b","name":"","topic":"/devices/weatherstation/data","qos":"2","datatype":"auto","broker":"ba04e421.7f8998","nl":false,"rap":true,"rh":0,"inputs":0,"x":160,"y":400,"wires":[["7f4712bf40fdf67e"]]},{"id":"7f4712bf40fdf67e","type":"json","z":"f333a36b4044850b","name":"","property":"payload","action":"","pretty":false,"x":350,"y":400,"wires":[["f0f3f61d1c3444e4"]]},{"id":"f0f3f61d1c3444e4","type":"function","z":"f333a36b4044850b","name":"Save 
+values","func":"flow.set(\"weather_temperature\", 
+msg.payload.temperature)\nflow.set(\"weather_humidity\", 
+msg.payload.humidity)\nreturn 
+msg;\n","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":490,"y":400,"wires":[["3309e16c70dd8c1b","43f6f4272c3ce083"]]},{"id":"011575235f45b0df","type":"function","z":"f333a36b4044850b","name":"Temperature 
+und Luftfeuchte einsetzen","func":"msg.payload.tempc = 
+flow.get(\"weather_temperature\")\nmsg.payload.humidity = 
+flow.get(\"weather_humidity\")\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":920,"y":400,"wires":[["a190b427c5d477e4"]]},{"id":"50e2d9987eb376a7","type":"cronplus","z":"f333a36b4044850b","name":"","outputField":"payload","timeZone":"Europe/Berlin","persistDynamic":false,"commandResponseMsgOutput":"output1","outputs":1,"options":[{"name":"normal","topic":"payload","payloadType":"default","payload":"","expressionType":"cron","expression":"0 
+* * * *","location":"50.73110684141121 
+7.098444700241089","offset":"-30","solarType":"all","solarEvents":"sunrise,sunset"}],"x":100,"y":340,"wires":[["9dd408365f49a6ef","10b931bce47f593d"]]},{"id":"52a8cd59f465734d","type":"telegram 
+sender","z":"f333a36b4044850b","name":"","bot":"c2882cfe.b231f","outputs":1,"x":820,"y":340,"wires":[[]]},{"id":"9dd408365f49a6ef","type":"function","z":"f333a36b4044850b","name":"","func":"msg.payload 
+= {\n    \"content\": \"sampling Data\",\n    \"chatId\": 759234415,\n    
+\"type\": \"message\"\n}\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":500,"y":340,"wires":[[]]},{"id":"43f6f4272c3ce083","type":"function","z":"f333a36b4044850b","name":"","func":"msg.payload 
+= {\n    \"content\": \"Temperature: \" + msg.payload.temperature + \", 
+Humidity: \" + msg.payload.humidity,\n    \"chatId\": 759234415,\n    
+\"type\": \"message\"\n}\nreturn 
+msg;","outputs":1,"noerr":0,"initialize":"","finalize":"","libs":[],"x":640,"y":360,"wires":[[]]},{"id":"84db7199eea1c64a","type":"debug","z":"f333a36b4044850b","name":"","active":true,"tosidebar":true,"console":false,"tostatus":false,"complete":"false","statusVal":"","statusType":"auto","x":770,"y":480,"wires":[]},{"id":"ca6f579ad7d9daf4","type":"dwdweather","z":"f333a36b4044850b","name":"","mosmixStation":"10519","lookAheadHours":"0","additionalFields":"PPPP,Td,FX1","omitMessageOnStart":true,"repeat":"0","topic":"","x":510,"y":500,"wires":[["84db7199eea1c64a"]]},{"id":"c59da1ab1b2866e8","type":"inject","z":"f333a36b4044850b","name":"","props":[{"p":"payload"},{"p":"topic","vt":"str"}],"repeat":"","crontab":"","once":false,"onceDelay":0.1,"topic":"","payload":"","payloadType":"date","x":260,"y":480,"wires":[["ca6f579ad7d9daf4"]]},{"id":"ba04e421.7f8998","type":"mqtt-broker","name":"","broker":"10.10.2.6","port":"1883","clientid":"nodered","usetls":false,"protocolVersion":"4","keepalive":"60","cleansession":true,"birthTopic":"","birthQos":"0","birthRetain":"false","birthPayload":"","birthMsg":{},"closeTopic":"","closeQos":"0","closeRetain":"false","closePayload":"","closeMsg":{},"willTopic":"","willQos":"0","willRetain":"false","willPayload":"","willMsg":{},"sessionExpiry":""},{"id":"c2882cfe.b231f","type":"telegram 
+bot","botname":"noderedaresbot","usernames":"","chatids":"","baseapiurl":"","updatemode":"polling","pollinterval":"300","usesocks":false,"sockshost":"","socksport":"6667","socksusername":"anonymous","sockspassword":"","bothost":"","localbotport":"8443","publicbotport":"8443","privatekey":"","certificate":"","useselfsignedcertificate":false,"sslterminated":false,"verboselogging":false}]
