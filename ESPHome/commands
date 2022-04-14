@@ -1,0 +1,3 @@
+# Compile and upload Firmware
+
+esphome weatherstation.yaml run
