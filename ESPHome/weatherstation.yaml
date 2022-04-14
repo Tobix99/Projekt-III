@@ -1,0 +1,48 @@
+esphome:
+  name: weatherstation
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+ota:
+
+logger:
+
+web_server:
+  port: 80
+
+mqtt:
+  broker: 10.10.2.6
+  username: "nodered"
+  password: !secret mqtt_password
+  discovery: false
+  on_message:
+    topic: /devices/weatherstation/getData
+    qos: 2
+    then:
+      - mqtt.publish_json:
+          topic: /devices/weatherstation/data
+          payload: |-
+            root["temperature"] = id(sht30_temperature).state;
+            root["humidity"] = id(sht30_humidity).state;
+
+i2c:
+  sda: GPIO4
+  scl: GPIO5
+  scan: true
+
+sensor:
+  - platform: sht3xd
+    temperature:
+      name: "Temperature"
+      id: sht30_temperature
+    humidity:
+      name: "Humidity"
+      id: sht30_humidity
+    address: 0x45
+    update_interval: 60s
+
